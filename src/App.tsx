@@ -1,31 +1,27 @@
-import React, { useState } from 'react';
-import logo from './logo.svg';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import './App.scss';
 import { Twites } from './components/Twites/Twites';
+import { Search } from './components/Search/Search';
 import { SavedTwitesService } from './services/SavedTwitesService';
 import { TwiteInterface } from './Interfaces/TwiteInterface';
+import { ApiService } from './services/ApiService';
 import styled from 'styled-components';
 
 function App() {
-  let twites = require('./mockTwitterData.json');
-  
-  twites = twites.statuses.map((status: any) => ({
-    avatarUrl: status.user.profile_image_url,
-    fullName: status.user.name,
-    text: status.text,
-    date: status.created_at,
-    id: status.id,
-  }));
-
-  const [latestTwites, setLatestTwites] = useState(twites);
+  const [latestTwites, setLatestTwites] = useState([]);
   const [savedTwites, setSavedTwites] = useState(SavedTwitesService.getTwites());
 
-  document.addEventListener("dragover", function(event) {
-    event.preventDefault();
-  });
+  const stateRef: any = useRef();
+  stateRef.current = latestTwites;
+  
+  useEffect(() => {
+    document.addEventListener("dragover", function(event) {
+      event.preventDefault();
+    });
+  }, [])
 
   const onDropHandler = (id: number) => {
-    const twite = latestTwites.find((latestTwite: TwiteInterface) => {
+    const twite = stateRef.current.find((latestTwite: TwiteInterface) => {
       return latestTwite.id == id;
     });
 
@@ -33,7 +29,13 @@ function App() {
       const newSavedTwites = SavedTwitesService.addTwite(twite);
       setSavedTwites(newSavedTwites);
     }
-  }
+  };
+
+  const searchHandler = useCallback((keywords: string) => {
+    ApiService.search(keywords).then((twites: any) => {
+      setLatestTwites(twites);
+    })
+  }, []);
   
   return (
     <div className="App">
@@ -42,7 +44,7 @@ function App() {
        <hr></hr>
      </AppTitle>
      <div>
-
+      <Search onSearch={searchHandler}></Search>
      </div>
      <div className="list-container">
         <div className="list">
